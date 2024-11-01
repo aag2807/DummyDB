@@ -1,11 +1,11 @@
 #ifndef DUMMYDB_DATABASE_H
 #define DUMMYDB_DATABASE_H
 
-
 #include <map>
 #include <string>
 #include <memory>
 #include "../Table/Table.h"
+#include "../Encryption/Encryption.h"
 
 class Database
 {
@@ -18,6 +18,10 @@ public:
     std::shared_ptr<Table> getTable(const std::string &tableName);
 
     void showTables() const;
+
+    bool saveToFile(const std::string &filename);
+
+    bool loadFromFile(const std::string &filename);
 };
 
 

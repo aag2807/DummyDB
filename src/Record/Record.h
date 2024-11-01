@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <sstream>
 
 class Record
 {
@@ -20,8 +21,11 @@ public:
 
     void setValue(size_t index, const std::string &value);
 
-
     size_t size() const;
+
+    std::string serialize() const;
+
+    static Record deserialize(const std::string &data);
 };
 
 

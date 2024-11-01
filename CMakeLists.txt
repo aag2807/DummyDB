@@ -9,7 +9,9 @@ add_executable(DummyDB main.cpp
         src/Record/Record.cpp
         src/Record/Record.h
         src/Table/Table.cpp
-        src/Table/Table.h)
+        src/Table/Table.h
+        src/Encryption/Encryption.cpp
+        src/Encryption/Encryption.h)
 
 find_package(refl-cpp)
 
