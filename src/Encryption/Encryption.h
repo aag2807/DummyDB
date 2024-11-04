@@ -8,6 +8,7 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
+#include "../constants.h"
 
 class Encryption
 {

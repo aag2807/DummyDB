@@ -6,18 +6,18 @@
 
 class FileHandler
 {
-private:
-    std::string filename;
 public:
-    explicit FileHandler(const std::string &fname) : filename(fname)
-    {}
+    std::string filename;
+
+    explicit FileHandler(const std::string &fname);
 
     bool writeEncrypted(const std::string &data);
 
     std::string readEncrypted();
 
-    bool appendEncrypted(const std::string &data);
-}
+    bool createBackup(const std::string &backup_name);
 
+    bool restoreFromBackup(const std::string &backup_name);
+};
 
 #endif //DUMMYDB_FILEHANDLER_H
