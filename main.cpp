@@ -3,12 +3,27 @@
 #include <vector>
 #include "src/Database/Database.h"
 
+void testDatabaseOperations();
+
+void testSQLParser();
+
+void printSeparator();
+
+int main()
+{
+    testDatabaseOperations();
+    printSeparator();
+    testSQLParser();
+
+    return 0;
+}
+
 void printSeparator()
 {
     std::cout << "\n----------------------------------------\n\n";
 }
 
-int main()
+void testDatabaseOperations()
 {
     // Initialize database
     Database db("test_database.cl");
@@ -147,5 +162,46 @@ int main()
     }
 
     std::cout << "\nDatabase demo completed!\n";
-    return 0;
+}
+
+void testSQLParser()
+{
+    Database db("sql_test.cl");
+
+    // Create a test table
+    std::vector<std::string> columns = {"id", "name", "price"};
+    db.createTable("products", columns);
+
+    // Test various SQL queries
+    std::cout << "\nTesting SQL queries:\n";
+
+    // Insert
+    db.executeSQL("INSERT INTO products VALUES (1, 'Smartphone', 599.99)");
+    db.executeSQL("INSERT INTO products VALUES (2, 'Laptop', 999.99)");
+    db.executeSQL("INSERT INTO products VALUES (3, 'Headphones', 99.99)");
+
+    // Select
+    std::cout << "\nAll products:\n";
+    db.executeSQL("SELECT * FROM products");
+
+    std::cout << "\nProducts with 'phone' in name:\n";
+    db.executeSQL("SELECT * FROM products WHERE name LIKE 'phone'");
+
+    std::cout << "\nProducts with price > 500:\n";
+    db.executeSQL("SELECT * FROM products WHERE price > 500");
+
+    // Update
+    db.executeSQL("UPDATE products SET price = 549.99 WHERE id = 1");
+
+    std::cout << "\nAfter update:\n";
+    db.executeSQL("SELECT * FROM products");
+
+    // Delete
+    db.executeSQL("DELETE FROM products WHERE price < 100");
+
+    std::cout << "\nAfter delete:\n";
+    db.executeSQL("SELECT * FROM products");
+
+    // Drop
+    db.executeSQL("DROP TABLE products");
 }

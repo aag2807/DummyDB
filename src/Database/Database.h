@@ -38,6 +38,8 @@ public:
     bool deleteRecords(const std::string& tableName, WhereClause* where = nullptr);
 
     bool dropTable(const std::string& tableName);
+
+    void executeSQL(const std::string& query);
 private:
     FileHandler file_handler;
     std::map<std::string, Index> indexes;

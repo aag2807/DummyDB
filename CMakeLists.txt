@@ -20,7 +20,9 @@ add_executable(DummyDB main.cpp
         src/Index/Index.cpp
         src/Index/Index.h
         src/Transaction/Transaction.cpp
-        src/Transaction/Transaction.h)
+        src/Transaction/Transaction.h
+        src/SQLParser/SQLParser.cpp
+        src/SQLParser/SQLParser.h)
 
 find_package(refl-cpp)
 
