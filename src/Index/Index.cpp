@@ -17,3 +17,7 @@ void Index::clear()
 {
     value_positions.clear();
 }
+
+Index::Index()
+{
+}

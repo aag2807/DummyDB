@@ -8,6 +8,8 @@
 class Index
 {
 public:
+    Index();
+
     explicit Index(const std::string &column);
 
     void addEntry(const std::string &value, size_t position);
