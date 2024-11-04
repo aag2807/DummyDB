@@ -10,7 +10,13 @@ void Index::addEntry(const std::string &value, size_t position)
 
 std::vector<size_t> Index::findPositions(const std::string &value)
 {
-    return value_positions[value];
+    auto it = value_positions.find(value);
+    if (it != value_positions.end())
+    {
+        return it->second;
+    }
+
+    return std::vector<size_t>();
 }
 
 void Index::clear()

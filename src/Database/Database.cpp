@@ -379,3 +379,91 @@ bool Database::deleteRecords(const std::string &tableName, WhereClause *where)
     std::cout << "Error deleting records.\n";
     return false;
 }
+
+bool Database::dropTable(const std::string &tableName)
+{
+    bool Database::dropTable(const std::string &tableName)
+    {
+        if (!tableExists(tableName))
+        {
+            std::cout << "Error: Table does not exist.\n";
+            return false;
+        }
+
+        Transaction trans(file_handler);
+        std::string content = file_handler.readEncrypted();
+        std::stringstream ss(content);
+        std::stringstream newContent;
+        std::string line;
+        bool foundTable = false;
+        bool inTargetTable = false;
+
+        // Process the file content
+        while (std::getline(ss, line))
+        {
+            // Check if we found the target table
+            if (line == "TABLE:" + tableName)
+            {
+                foundTable = true;
+                inTargetTable = true;
+                continue; // Skip the table declaration line
+            }
+
+            // If we're in the target table, skip lines until we hit the separator
+            if (inTargetTable)
+            {
+                if (line == TABLE_SEPARATOR)
+                {
+                    inTargetTable = false;
+                }
+                continue; // Skip all table content
+            }
+
+            // Skip records belonging to the dropped table
+            if (line.substr(0, 7) == "RECORD:" &&
+                line.substr(7, tableName.length()) == tableName)
+            {
+                continue;
+            }
+
+            // Keep all other content
+            newContent << line << "\n";
+        }
+
+        if (!foundTable)
+        {
+            std::cout << "Error: Table not found.\n";
+            return false;
+        }
+
+        // Remove any indexes associated with this table
+        auto it = indexes.begin();
+        while (it != indexes.end())
+        {
+            if (it->first.substr(0, tableName.length()) == tableName)
+            {
+                it = indexes.erase(it);
+            } else
+            {
+                ++it;
+            }
+        }
+
+        // Write the new content without the dropped table
+        trans.addOperation(newContent.str());
+        if (trans.commit())
+        {
+            // If we dropped the current table, clear the current table info
+            if (current_table == tableName)
+            {
+                current_table.clear();
+                current_columns.clear();
+            }
+            std::cout << "Table '" << tableName << "' dropped successfully.\n";
+            return true;
+        }
+
+        std::cout << "Error dropping table.\n";
+        return false;
+    }
+}

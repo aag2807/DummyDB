@@ -37,6 +37,7 @@ public:
                        WhereClause* where = nullptr);
     bool deleteRecords(const std::string& tableName, WhereClause* where = nullptr);
 
+    bool dropTable(const std::string& tableName);
 private:
     FileHandler file_handler;
     std::map<std::string, Index> indexes;
