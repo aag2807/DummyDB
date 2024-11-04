@@ -9,11 +9,17 @@ void testSQLParser();
 
 void printSeparator();
 
+void testSpecificColumnSelects();
+
 int main()
 {
-    testDatabaseOperations();
-    printSeparator();
-    testSQLParser();
+    Database db("dummy_test_products.cl");    std::vector<std::string> columns = {"id", "name", "price"};
+    db.createTable("products", columns);
+
+    db.executeSQL("INSERT INTO products VALUES (1, 'Smartphone', 599.99)");
+    db.executeSQL("INSERT INTO products VALUES (2, 'Laptop', 999.99)");
+    db.executeSQL("INSERT INTO products VALUES (3, 'Headphones', 99.99)");
+    db.executeSQL("select * from products");
 
     return 0;
 }
@@ -204,4 +210,36 @@ void testSQLParser()
 
     // Drop
     db.executeSQL("DROP TABLE products");
+}
+
+void testSpecificColumnSelects()
+{
+    Database db("column_test.cl");
+
+    // Create a test table
+    std::vector<std::string> columns = {"id", "name", "price", "category", "stock"};
+    db.createTable("products", columns);
+
+    // Insert test data
+    db.executeSQL("INSERT INTO products VALUES (1, 'Smartphone', 599.99, 'Electronics', 50)");
+    db.executeSQL("INSERT INTO products VALUES (2, 'Laptop', 999.99, 'Electronics', 30)");
+    db.executeSQL("INSERT INTO products VALUES (3, 'Headphones', 99.99, 'Accessories', 100)");
+    db.executeSQL("INSERT INTO products VALUES (4, 'Mouse', 29.99, 'Accessories', 200)");
+
+    std::cout << "\nTesting column-specific SELECT queries:\n";
+    std::cout << "\n1. Select specific columns:\n";
+    db.executeSQL("SELECT name, price FROM products");
+
+    std::cout << "\n2. Select specific columns with WHERE clause:\n";
+    db.executeSQL("SELECT name, stock FROM products WHERE category = 'Electronics'");
+
+    std::cout << "\n3. Select columns in different order:\n";
+    db.executeSQL("SELECT category, name, price FROM products");
+
+    std::cout << "\n4. Select single column:\n";
+    db.executeSQL("SELECT name FROM products WHERE price > 500");
+
+    // Test error handling
+    std::cout << "\n5. Testing error handling - non-existent column:\n";
+    db.executeSQL("SELECT name, invalid_column FROM products");
 }
