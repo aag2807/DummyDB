@@ -6,23 +6,33 @@
 #include <memory>
 #include "../Table/Table.h"
 #include "../Encryption/Encryption.h"
+#include "../FileHandler/FileHandler.h"
 
 class Database
 {
 private:
-    std::map<std::string, std::shared_ptr<Table>> tables;
+    FileHandler file_handler;
+    std::vector<std::string> current_columns;
+    std::string current_table;
+
+    bool tableExists(const std::string &tableName);
+
+    std::vector<std::string> splitString(const std::string &str, char delimiter);
+
 public:
+    Database(const std::string &filename) : file_handler(filename)
+    {}
 
-    void createTable(const std::string &tableName, const std::vector<std::string> &columns);
+    bool createTable(const std::string &tableName, const std::vector<std::string> &columns);
 
-    std::shared_ptr<Table> getTable(const std::string &tableName);
+    bool insertRecord(const std::string &tableName, const std::vector<std::string> &values);
 
-    void showTables() const;
+    void selectAll(const std::string &tableName);
 
-    bool saveToFile(const std::string &filename);
+    void deleteRecords(const std::string &tableName, const std::string &condition);
 
-    bool loadFromFile(const std::string &filename);
+    void updateRecords(const std::string &tableName, const std::string &condition);
 };
 
 
-#endif //DUMMYDB_DATABASE_H
+#endif

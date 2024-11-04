@@ -1,12 +1,12 @@
 #include "Encryption.h"
 
 const std::string ENCRYPTION_KEY = "CLAUDE_KEY_2024";
+const std::string TABLE_SEPARATOR = "---END_TABLE---\n";
+const std::string RECORD_SEPARATOR = "\n";
 
-std::string Encryption::xorEncrypt(const std::string &data, const std::string &key)
-{
+std::string Encryption::xorEncrypt(const std::string& data, const std::string& key) {
     std::string result = data;
-    for (size_t i = 0; i < data.length(); i++)
-    {
+    for (size_t i = 0; i < data.length(); i++) {
         result[i] = data[i] ^ key[i % key.length()];
     }
     return result;

@@ -1,122 +1,146 @@
 #include "Database.h"
 
-void Database::createTable(const std::string &tableName, const std::vector<std::string> &columns)
+const std::string RECORD_SEPARATOR = "\n";
+const std::string TABLE_SEPARATOR = "---END_TABLE---\n";
+
+bool Database::tableExists(const std::string &tableName)
 {
-    if (tables.find(tableName) == tables.end())
-    {
-        tables[tableName] = std::make_shared<Table>(tableName, columns);
-        std::cout << "Table '" << tableName << "' created successfully.\n";
-    } else
-    {
-        std::cout << "Error: Table '" << tableName << "' already exists.\n";
-    }
+    std::string content = file_handler.readEncrypted();
+    return content.find("TABLE:" + tableName + "\n") != std::string::npos;
 }
 
-std::shared_ptr<Table> Database::getTable(const std::string &tableName)
+std::vector<std::string> Database::splitString(const std::string &str, char delimiter)
 {
-    auto it = tables.find(tableName);
-    if (it != tables.end())
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delimiter))
     {
-        return it->second;
+        tokens.push_back(token);
     }
-    return nullptr;
+    return tokens;
 }
 
-void Database::showTables() const
+bool Database::createTable(const std::string &tableName, const std::vector<std::string> &columns)
 {
-    std::cout << "Tables in database:\n";
-    for (const auto &table: tables)
+    if (tableExists(tableName))
     {
-        std::cout << "- " << table.first << "\n";
-    }
-}
-
-bool Database::saveToFile(const std::string &filename)
-{
-    try
-    {
-        std::ofstream file(filename, std::ios::binary);
-        if (!file.is_open())
-        {
-            std::cout << "Error: Could not open file for writing.\n";
-            return false;
-        }
-
-        // Serialize database structure
-        std::stringstream ss;
-        ss << tables.size() << "\n";
-
-        for (const auto &table: tables)
-        {
-            ss << table.first << "\n";  // Table name
-            ss << table.second->serialize();  // Table content
-            ss << "---END_TABLE---\n";  // Table separator
-        }
-
-        // Encrypt and write to file
-        std::string encrypted = Encryption::encrypt(ss.str());
-        file.write(encrypted.c_str(), encrypted.size());
-        file.close();
-
-        std::cout << "Database saved successfully to " << filename << "\n";
-        return true;
-    } catch (const std::exception &e)
-    {
-        std::cout << "Error saving database: " << e.what() << "\n";
+        std::cout << "Error: Table already exists.\n";
         return false;
     }
+
+    std::stringstream ss;
+    ss << "TABLE:" << tableName << "\n";
+    ss << "COLUMNS:";
+    for (size_t i = 0; i < columns.size(); ++i)
+    {
+        if (i > 0) ss << ",";
+        ss << columns[i];
+    }
+    ss << "\n" << TABLE_SEPARATOR;
+
+    if (file_handler.appendEncrypted(ss.str()))
+    {
+        current_table = tableName;
+        current_columns = columns;
+        std::cout << "Table created successfully.\n";
+        return true;
+    }
+
+    std::cout << "Error creating table.\n";
+    return false;
 }
 
-bool Database::loadFromFile(const std::string &filename)
+bool Database::insertRecord(const std::string &tableName, const std::vector<std::string> &values)
 {
-    try
+    if (!tableExists(tableName))
     {
-        std::ifstream file(filename, std::ios::binary);
-        if (!file.is_open())
+        std::cout << "Error: Table does not exist.\n";
+        return false;
+    }
+
+    std::stringstream ss;
+    ss << "RECORD:" << tableName << ":";
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        if (i > 0) ss << ",";
+        ss << values[i];
+    }
+    ss << RECORD_SEPARATOR;
+
+    if (file_handler.appendEncrypted(ss.str()))
+    {
+        std::cout << "Record inserted successfully.\n";
+        return true;
+    }
+
+    std::cout << "Error inserting record.\n";
+    return false;
+}
+
+void Database::selectAll(const std::string &tableName)
+{
+    std::string content = file_handler.readEncrypted();
+    std::stringstream ss(content);
+    std::string line;
+    bool foundTable = false;
+    std::vector<std::string> columns;
+
+    while (std::getline(ss, line))
+    {
+        if (line == "TABLE:" + tableName)
         {
-            std::cout << "Error: Could not open file for reading.\n";
-            return false;
-        }
-
-        // Read encrypted content
-        std::stringstream ss;
-        ss << file.rdbuf();
-        std::string encrypted = ss.str();
-        file.close();
-
-        // Decrypt content
-        std::string decrypted = Encryption::decrypt(encrypted);
-        std::stringstream contentStream(decrypted);
-
-        // Clear existing tables
-        tables.clear();
-
-        // Read number of tables
-        std::string line;
-        std::getline(contentStream, line);
-        int numTables = std::stoi(line);
-
-        // Read each table
-        for (int i = 0; i < numTables; ++i)
-        {
-            std::string tableName;
-            std::getline(contentStream, tableName);
-
-            std::stringstream tableContent;
-            while (std::getline(contentStream, line))
+            foundTable = true;
+            std::getline(ss, line); // Read columns line
+            if (line.substr(0, 8) == "COLUMNS:")
             {
-                if (line == "---END_TABLE---") break;
-                tableContent << line << "\n";
+                columns = splitString(line.substr(8), ',');
+
+                // Print column headers
+                for (const auto &col: columns)
+                {
+                    std::cout << col << "\t";
+                }
+                std::cout << "\n";
+                break;
             }
-
-            tables[tableName] = Table::deserialize(tableName, tableContent.str());
         }
-
-        std::cout << "Database loaded successfully from " << filename << "\n";
-        return true;
-    } catch (const std::exception &e)
-    {
-        std::cout << "Error loading database: " << e.what() << "\n";
-        return false;
     }
+
+    if (!foundTable)
+    {
+        std::cout << "Table not found.\n";
+        return;
+    }
+
+    // Read and print records
+    ss.str(content);
+    while (std::getline(ss, line))
+    {
+        if (line.substr(0, 7) == "RECORD:" &&
+            line.substr(7, tableName.length()) == tableName)
+        {
+
+            std::string record_data = line.substr(8 + tableName.length());
+            auto values = splitString(record_data, ',');
+
+            for (const auto &value: values)
+            {
+                std::cout << value << "\t";
+            }
+            std::cout << "\n";
+        }
+    }
+}
+
+void Database::deleteRecords(const std::string &tableName, const std::string &condition)
+{
+    // To be implemented: Delete records based on condition
+    std::cout << "Delete functionality to be implemented.\n";
+}
+
+void Database::updateRecords(const std::string &tableName, const std::string &condition)
+{
+    // To be implemented: Update records based on condition
+    std::cout << "Update functionality to be implemented.\n";
 }
