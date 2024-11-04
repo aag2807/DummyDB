@@ -31,6 +31,7 @@ std::vector<std::string> Database::getTableColumns(const std::string &tableName)
             {
                 return splitString(line.substr(8), ',');
             }
+            break;  // Exit if we found the table but columns are malformed
         }
     }
     return std::vector<std::string>();
@@ -199,6 +200,7 @@ void Database::selectAll(const std::string &tableName, WhereClause *where)
         return;
     }
 
+    // Get all columns first
     auto columns = getTableColumns(tableName);
     if (columns.empty())
     {
@@ -213,13 +215,16 @@ void Database::selectAll(const std::string &tableName, WhereClause *where)
     }
     std::cout << "\n";
 
-    // Read and filter records
+    // Read records once
     std::string content = file_handler.readEncrypted();
     std::stringstream ss(content);
     std::string line;
 
+    bool foundTable = false;  // Flag to track if we've found our table section
+
     while (std::getline(ss, line))
     {
+        // Skip until we find our table's records
         if (line.substr(0, 7) == "RECORD:" &&
             line.substr(7, tableName.length()) == tableName)
         {
@@ -478,8 +483,13 @@ void Database::executeSQL(const std::string &query)
                 selectAll(parsedQuery.table, parsedQuery.whereClause.get());
             } else
             {
-                // TODO: Implement column-specific select
-                selectAll(parsedQuery.table, parsedQuery.whereClause.get());
+                if (parsedQuery.columns.size() == 1 && parsedQuery.columns[0] == "*")
+                {
+                    selectAll(parsedQuery.table, parsedQuery.whereClause.get());
+                } else
+                {
+                    selectColumns(parsedQuery.table, parsedQuery.columns, parsedQuery.whereClause.get());
+                }
             }
             break;
 
@@ -505,5 +515,74 @@ void Database::executeSQL(const std::string &query)
         default:
             std::cout << "Unsupported or invalid SQL query.\n";
             break;
+    }
+}
+
+void
+Database::selectColumns(const std::string &tableName, const std::vector<std::string> &selectColumns, WhereClause *where)
+{
+    if (!tableExists(tableName))
+    {
+        std::cout << "Error: Table does not exist.\n";
+        return;
+    }
+
+    // Get all columns first
+    auto allColumns = getTableColumns(tableName);
+    if (allColumns.empty())
+    {
+        std::cout << "Error: Could not read table columns.\n";
+        return;
+    }
+
+    // Verify that requested columns exist and get their indices
+    std::vector<size_t> columnIndices;
+    for (const auto &col: selectColumns)
+    {
+        auto it = std::find(allColumns.begin(), allColumns.end(), col);
+        if (it == allColumns.end())
+        {
+            std::cout << "Error: Column '" << col << "' does not exist in table.\n";
+            return;
+        }
+        columnIndices.push_back(it - allColumns.begin());
+    }
+
+    // Print selected column headers
+    for (const auto &col: selectColumns)
+    {
+        std::cout << col << "\t";
+    }
+    std::cout << "\n";
+
+    // Read records once
+    std::string content = file_handler.readEncrypted();
+    std::stringstream ss(content);
+    std::string line;
+
+    bool foundTable = false;  // Flag to track if we've found our table section
+
+    while (std::getline(ss, line))
+    {
+        // Skip until we find our table's records
+        if (line.substr(0, 7) == "RECORD:" &&
+            line.substr(7, tableName.length()) == tableName)
+        {
+
+            auto values = splitString(line.substr(8 + tableName.length()), ',');
+
+            if (!where || where->evaluate(allColumns, values))
+            {
+                // Print only selected columns
+                for (size_t index: columnIndices)
+                {
+                    if (index < values.size())
+                    {
+                        std::cout << values[index] << "\t";
+                    }
+                }
+                std::cout << "\n";
+            }
+        }
     }
 }

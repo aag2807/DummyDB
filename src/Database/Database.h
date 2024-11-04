@@ -40,6 +40,11 @@ public:
     bool dropTable(const std::string& tableName);
 
     void executeSQL(const std::string& query);
+
+    void selectColumns(const std::string& tableName,
+                       const std::vector<std::string>& selectColumns,
+                       WhereClause* where = nullptr);
+
 private:
     FileHandler file_handler;
     std::map<std::string, Index> indexes;
